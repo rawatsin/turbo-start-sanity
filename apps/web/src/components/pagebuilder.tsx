@@ -38,7 +38,7 @@ type SanityDataAttributeConfig = {
 function renderBlockComponent(
   block: PageBuilderBlock,
   isFirst: boolean,
-  dataSanity?: string
+  dataSanity?: string,
 ) {
   switch (block?._type) {
     case "cta":
@@ -69,6 +69,7 @@ function renderBlockComponent(
     case "subscribeNewsletter":
       return (
         <SubscribeNewsletter
+          action="/api/newsletter"
           {...(block as PagebuilderType<"subscribeNewsletter">)}
         />
       );
@@ -124,7 +125,7 @@ function UnknownBlockError({
 
 function useOptimisticPageBuilder(
   initialBlocks: PageBuilderBlock[],
-  documentId: string
+  documentId: string,
 ) {
   // biome-ignore lint/suspicious/noExplicitAny: <any is used to allow for dynamic component rendering>
   return useOptimistic<PageBuilderBlock[], any>(
@@ -144,7 +145,7 @@ function useOptimisticPageBuilder(
       // the resolved blocks. Keys with no resolved block (a just-inserted one)
       // are dropped until revalidation projects them.
       const resolved = new Map(
-        currentBlocks.map((block) => [block._key, block])
+        currentBlocks.map((block) => [block._key, block]),
       );
       const reordered: PageBuilderBlock[] = [];
       for (const raw of action.document.pageBuilder) {
@@ -154,7 +155,7 @@ function useOptimisticPageBuilder(
         }
       }
       return reordered;
-    }
+    },
   );
 }
 
@@ -178,7 +179,7 @@ function useBlockRenderer(id: string, type: string) {
       renderBlockComponent(
         block,
         index === 0,
-        isLeadingHero ? dataSanity : undefined
+        isLeadingHero ? dataSanity : undefined,
       );
 
     if (!content) {
@@ -195,7 +196,7 @@ function useBlockRenderer(id: string, type: string) {
       <div
         className={cn(
           "min-w-0",
-          isLeadingHero ? "contents" : "relative z-10 bg-background"
+          isLeadingHero ? "contents" : "relative z-10 bg-background",
         )}
         data-sanity={isLeadingHero ? undefined : dataSanity}
         key={`${block._type}-${block._key}`}
