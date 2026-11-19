@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:presentation": "playwright test --config playwright.presentation.config.ts"
+    "test:e2e:presentation": "playwright test --config playwright.presentation.config.ts",
+    "backfill": "node --experimental-strip-types scripts/backfill-algolia.ts"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^2.0.91",
@@ -30,6 +31,7 @@
     "@workspace/tailwind-config": "workspace:*",
     "@workspace/ui": "workspace:*",
     "ai": "^7.0.163",
+    "algoliasearch": "^5.65.0",
     "fuse.js": "^7.5.0",
     "lucide-react": "catalog:",
     "next": "16.4.5",

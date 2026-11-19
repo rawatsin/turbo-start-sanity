@@ -18,6 +18,10 @@ const env = createEnv({
     // FAQ ask box; `/api/ask` returns 503 until both are set.
     SANITY_CONTEXT_ENDPOINT: z.url().optional(),
     SANITY_CONTEXT_TOKEN: z.string().min(1).optional(),
+    // Algolia Admin / Write Key (server only, never leaked to client)
+    ALGOLIA_ADMIN_API_KEY: z.string().min(1).optional(),
+    // Secret used to authenticate Sanity Webhook calls to /api/algolia/sync
+    SANITY_ALGOLIA_WEBHOOK_SECRET: z.string().min(1).optional(),
   },
 
   experimental__runtimeEnv: {
