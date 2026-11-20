@@ -8,12 +8,11 @@
 ## Section 1: What I built and why
 
 ### Task 1: Newsletter Signup
-* **Sanity Studio Schema:** I created a new `subscriber` document schema in `apps/studio/schemaTypes/documents/subscriber.ts` with fields for `email`, `subscribedAt`, and `status`. I set all fields to `readOnly: true` so editors can view who subscribed in the Studio sidebar under "Subscribers", but cannot accidentally edit or delete subscriber emails.
-* **Dual Parsing (JSON & Browser Form):** Since a browser form submission is not the same as a JSON curl request, I wrote the route to check the incoming `Content-Type`. If it is `application/json` (fetch/curl), it parses JSON. If it is `application/x-www-form-urlencoded` or `multipart/form-data`, it parses `req.formData()`. This ensures progressive enhancement works even if JavaScript is disabled.
-* **Duplicate Prevention & Idempotency:** To prevent the same email from creating duplicate records, I hashed the normalized lowercase email using Node's `createHash("sha256")` and prefixed it as `subscriber-${hash}`. I used Sanity's `createIfNotExists()` so submitting the same email again updates nothing, does not throw an error, and returns a clean 200 success response.
-* **Rate Limiting:** The rate limit lives directly inside `apps/web/src/app/api/newsletter/route.ts` as an in-memory sliding window map. It is capped at **5 requests per minute** per client IP. If exceeded, it returns a `429 Too Many Requests` status code to prevent bot spam.
-* **Validation & Status Codes:** I used regex validation on the email. If the email is missing, malformed, or exceeds 320 characters, it returns `400 Bad Request` with an informative error message rather than a 500 error.
-* **Wiring the Frontend Block:** In `apps/web/src/components/pagebuilder.tsx`, I pointed the `SubscribeNewsletter` block form to `action="/api/newsletter"`. If submitted through an HTML browser form, it returns an HTTP 303 redirect back to the page with `?newsletter=success`.
+* I created a subscriber document in Sanity Studio and defined its schema (`email`, `subscribedAt`, `status`). I set the fields to `readOnly: true` so editors can see subscribers in the sidebar, but cannot accidentally edit or delete their emails.
+* After that, I created the route (`/api/newsletter`). To make sure the route handles different ways people submit, I implemented dual parsing. It accepts requests from curl/fetch (`application/json`) as well as native form submissions directly through the website (`application/x-www-form-urlencoded` and `multipart/form-data`).
+* I made sure it is idempotent so that two retries with the same email do not create two subscriber entries. I used a deterministic SHA-256 hash for the document ID and used Sanity's built-in `createIfNotExists()`.
+* Rate limiting: it lives on the random access memory (RAM) of the server inside a sliding window map. It takes up to 5 requests per minute per IP. If exceeded, it sends a `429 Too Many Requests` status code to prevent bot spam.
+* Lastly, I connected the frontend newsletter block on the site to the route I created. For native browser forms, it returns an HTTP 303 redirect back to the page with `?newsletter=success`.
 
 ---
 
@@ -59,6 +58,7 @@
 
 ## Section 2: What I noticed (Bugs Found / Observations)
 
+* **Direct API navigation on native form rate-limit:** When someone submits the newsletter through the website's HTML form more than 5 times, the browser directly loads the raw `/api/newsletter` page showing the JSON error (`{"error":"Too many requests..."}`). This happens because a standard HTML `<form action="/api/newsletter">` navigates the browser window directly to the action URL when an error status (like 429 or 400) is returned without a redirect.
 * **Turborepo cache warning on Vercel:** When adding new keys like `ALGOLIA_ADMIN_API_KEY` and `SANITY_ALGOLIA_WEBHOOK_SECRET`, Turborepo warned during Vercel builds that they were missing from `turbo.json`. That took me quite a bit of time to debug, so I added both of them to `globalEnv` in `turbo.json` so they get recognized at build time.
 * **`orderRank` warning in Studio:** In the blog document editor, there is a warning stating *"Unknown field found. The field is not defined in the schema"*. This appears to be leftover data from a legacy drag-and-drop ordering plugin. It should either be removed from the dataset or defined in the blog schema.
 * **Draft ID prefix behavior:** Sanity prefixes documents currently being edited with `drafts.<id>`, which will fail lookups against external search engines or databases unless the prefix is stripped first.
@@ -67,7 +67,9 @@
 
 ## Section 3: What I'd do with more time
 
+* **Frontend Notifications & Status Handling:** For the newsletter, I would add push/toast notifications on the frontend instead of raw API redirects. I would also return more specific status messages (for example, telling the user *"You are already subscribed!"* rather than a generic success).
+* **Advanced Bot & Rate Limiting Techniques:** I would implement advanced bot prevention techniques, like a hidden honeypot form field (which bots fill out but humans don't) and Cloudflare Turnstile / bot protection to filter out scripts before they even touch the server.
 * **Webhook Retries and Fallbacks:** If Algolia is temporarily unreachable or down when something changes in Sanity, the webhook would fail and that update would be missed. I would like to figure out a retry or queue system so that failed syncs don't just get dropped and can retry automatically once Algolia is back up.
 * **Detailed Webhook Logging:** I would make more detailed logging inside the webhook attempt logs, making it clearly visible whether a draft was detected, why a payload was accepted, or the exact reason why a document was rejected.
-* **Persistent Rate Limiting:** Currently, the rate limiter uses an in-memory JavaScript Map. In a serverless environment like Vercel, separate function instances don't share memory and cold starts reset the map. With more time, I would connect an Upstash Redis store so rate limiting is shared across all instances.
+* **Persistent Rate Limiting (Redis):** Currently, rate limiting is stored in server RAM in a Map. On serverless platforms like Vercel, memory isn't shared across different instances. I would connect an Upstash Redis store so the rate limit persists across serverless cold starts.
 * **Studio Deep Dive:** Honestly, I would spend more time reading through the Studio editor internals, understanding all the schema fields (like Open Graph settings and metadata), and exploring what each field does under the hood.
