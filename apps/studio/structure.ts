@@ -9,6 +9,7 @@ import {
   MessageCircle,
   PanelBottom,
   PanelTop,
+  Search,
   Settings2,
   TrendingUpDown,
   User,
@@ -16,6 +17,7 @@ import {
 import type { StructureBuilder } from "sanity/structure";
 
 import { createSlugBasedStructure } from "@/components/nested-pages-structure";
+import { SeoPane } from "@/components/seo-pane";
 import type { SchemaType, SingletonType } from "@/schemaTypes/index";
 import { getTitleCase } from "@/utils/helper";
 
@@ -83,6 +85,18 @@ const createIndexListWithDatedItems = ({ S, index, list }: CreateIndexList) => {
               S.documentTypeList(list.type)
                 .title(listTitle)
                 .defaultOrdering([{ field: "publishedAt", direction: "desc" }])
+                .child((documentId) =>
+                  S.document()
+                    .documentId(documentId)
+                    .schemaType(list.type)
+                    .views([
+                      S.view.form(),
+                      S.view
+                        .component(SeoPane)
+                        .title("SEO & Index")
+                        .icon(Search),
+                    ])
+                )
             ),
         ])
     );
